@@ -1,7 +1,7 @@
 #define BLOCK_SIZE 256
 
 __global__ void solve(sGalaxy A, sGalaxy B, float* distances, int n) {
-    int x = blockDim.x * blockIdx.x + threadIdx.x;
+    int x = (blockIdx.y * gridDim.x + blockIdx.x) * BLOCK_SIZE + threadIdx.x;
     int i = x % n;
     int j = i + 1 + x / n;
 
@@ -37,7 +37,8 @@ int roundUp(int value, int div) {
 }
 
 float solveGPU(sGalaxy A, sGalaxy B, int n) {
-    dim3 dimGrid = roundUp(n*n, BLOCK_SIZE);
+    int a = roundUp(n, 16);
+    dim3 dimGrid (a, a);
     dim3 dimBlock = BLOCK_SIZE;
     float* distances;
     size_t size = sizeof(*distances);

@@ -1,5 +1,5 @@
 #define BLOCK_DIM 22
-#define BLOCK_SIZE 484
+#define BLOCK_SIZE BLOCK_DIM * BLOCK_DIM
 
 __global__ void solve(sGalaxy A, sGalaxy B, float* distances, int n) {
 //    printf("GRID: %d %d\n", gridDim.x, gridDim.y);
@@ -33,7 +33,7 @@ __global__ void solve(sGalaxy A, sGalaxy B, float* distances, int n) {
     }
     __syncthreads();
 
-    if (i < n && j < n && i < j) {
+    if (i < n && j < n && i > j) {
         float da = sqrt(
                 (As[threadIdx.x][0][0]-As[threadIdx.y][0][1])*(As[threadIdx.x][0][0]-As[threadIdx.y][0][1])
                 + (As[threadIdx.x][1][0]-As[threadIdx.y][1][1])*(As[threadIdx.x][1][0]-As[threadIdx.y][1][1])
@@ -67,9 +67,10 @@ int roundUp(int value, int div) {
 }
 
 float solveGPU(sGalaxy A, sGalaxy B, int n) {
-    int a = roundUp(n, 22);
-    dim3 dimGrid (a, a);
-    dim3 dimBlock (22, 22);
+    int a = roundUp(n, BLOCK_DIM);
+    int b = roundUp(a, 1);
+    dim3 dimGrid (a, b);
+    dim3 dimBlock (BLOCK_DIM, BLOCK_DIM);
     float* distances;
     size_t size = sizeof(*distances);
     cudaMalloc(&distances, size);

@@ -1,4 +1,4 @@
-#define BLOCK_DIM 2
+#define BLOCK_DIM 5
 #define BLOCK_SIZE BLOCK_DIM * BLOCK_DIM
 
 __global__ void solve(sGalaxy A, sGalaxy B, float* distances, int n, int per_thread) {
@@ -8,18 +8,24 @@ __global__ void solve(sGalaxy A, sGalaxy B, float* distances, int n, int per_thr
     int bid = threadIdx.y * blockDim.x + threadIdx.x;
     int i = base + bid;
 
+    float Ax = A.x[i];
+    float Ay = A.y[i];
+    float Az = A.z[i];
+    float Bx = B.x[i];
+    float By = B.y[i];
+    float Bz = B.z[i];
+
     __shared__ float D[BLOCK_SIZE];
     D[bid] = 0.0f;
 
-    // TODO: load and compute in loops
-    for (int t = 0; t < per_thread; t++) {
-        int index = t * BLOCK_SIZE + i;
+    for (int t = blockIdx.x; t < per_thread; t++) {
+        int index = t * BLOCK_SIZE + bid;
 
         __shared__ float As[BLOCK_SIZE * 3];
         __shared__ float Bs[BLOCK_SIZE * 3];
 
-        // LOAD SHARED
-        if (bid < n) {
+        // LOAD TO SHARED
+        if (index < n) {
             As[bid * 3] = A.x[index];
             As[bid * 3 + 1] = A.y[index];
             As[bid * 3 + 2] = A.z[index];
@@ -52,21 +58,8 @@ __global__ void solve(sGalaxy A, sGalaxy B, float* distances, int n, int per_thr
 
         // COMPUTE
         float tmp = 0.0f;
-        for (int k = bid + 1; k < BLOCK_SIZE && base + k < n; k++) {
-            printf("%d %d\n", i, k);
-
-            float Ax = A.x[i];
-            float Ay = A.y[i];
-            float Az = A.z[i];
-            float Bx = B.x[i];
-            float By = B.y[i];
-            float Bz = B.z[i];
-
-            if (blockIdx.x == 1) {
-                printf("%f %f %f\n", Ax, Ay, Az);
-                printf("%f %f %f\n", A.x[i], A.y[i], A.z[i]);
-            }
-
+        int ooo = (t == blockIdx.x) ? bid + 1 : 0;
+        for (int k = ooo; k < BLOCK_SIZE && base + k < n && t * BLOCK_SIZE + k < n; k++) {
             float da = sqrt(
                     (Ax - As[k * 3]) * (Ax - As[k * 3]) +
                     (Ay - As[k * 3 + 1]) * (Ay - As[k * 3 + 1]) +
@@ -78,8 +71,13 @@ __global__ void solve(sGalaxy A, sGalaxy B, float* distances, int n, int per_thr
                     (Bz - Bs[k * 3 + 2]) * (Bz - Bs[k * 3 + 2])
             );
             tmp += (da - db) * (da - db);
-            //        printf("%d = %f\n", i, tmp);
-            //        printf("(%d %d) D[%d] = %f\n", i, k, bid, tmp);
+//            printf("%d %d = %f\n", i, t * BLOCK_SIZE + k, tmp);
+//            if (i == 4 && t * BLOCK_SIZE + k == 5) {
+//                printf("%f %f %f\n", Ax, Ay, Az);
+//                printf("%f %f %f\n", As[k * 3], As[k * 3 + 1], As[k * 3 + 2]);
+//            }
+//            printf("%d = %f\n", i, tmp);
+//            printf("(%d %d) D[%d] = %f\n", i, k, bid, tmp);
         }
         D[bid] += tmp;
     }

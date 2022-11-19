@@ -2,8 +2,6 @@
 #define BLOCK_SIZE BLOCK_DIM * BLOCK_DIM
 
 __global__ void solve(sGalaxy A, sGalaxy B, float* distances, int n, int per_thread) {
-//    printf("GRID: %d %d\n", gridDim.x, gridDim.y);
-//    printf("PER: %d\n", per_thread);
     int base = BLOCK_SIZE * blockIdx.x;
     int bid = threadIdx.y * blockDim.x + threadIdx.x;
     int i = base + bid;
@@ -36,26 +34,6 @@ __global__ void solve(sGalaxy A, sGalaxy B, float* distances, int n, int per_thr
         }
         __syncthreads();
 
-        // PRINT SHARED MEMORY
-//        if (bid == 0 && blockIdx.x == 0) {
-//            printf("A:\n");
-//            printf("%f %f %f\n", A.x[0], A.y[0], A.z[0]);
-//            printf("%f %f %f\n", A.x[1], A.y[1], A.z[1]);
-//            printf("%f %f %f\n", A.x[2], A.y[2], A.z[2]);
-//            printf("%f %f %f\n", A.x[3], A.y[3], A.z[3]);
-//            printf("As:\n");
-//            printf("%f %f %f\n", As[0], As[1], As[2]);
-//            printf("%f %f %f\n", As[3], As[4], As[5]);
-//            printf("%f %f %f\n", As[6], As[7], As[8]);
-//            printf("%f %f %f\n", As[9], As[10], As[11]);
-//        }
-//        if (bid == 0 && blockIdx.x == 1) {
-//            printf("A:\n");
-//            printf("%f %f %f\n", A.x[4], A.y[4], A.z[4]);
-//            printf("As:\n");
-//            printf("%f %f %f\n", As[0], As[1], As[2]);
-//        }
-
         // COMPUTE
         float tmp = 0.0f;
         int ooo = (t == blockIdx.x) ? bid + 1 : 0;
@@ -71,13 +49,6 @@ __global__ void solve(sGalaxy A, sGalaxy B, float* distances, int n, int per_thr
                     (Bz - Bs[k * 3 + 2]) * (Bz - Bs[k * 3 + 2])
             );
             tmp += (da - db) * (da - db);
-//            printf("%d %d = %f\n", i, t * BLOCK_SIZE + k, tmp);
-//            if (i == 4 && t * BLOCK_SIZE + k == 5) {
-//                printf("%f %f %f\n", Ax, Ay, Az);
-//                printf("%f %f %f\n", As[k * 3], As[k * 3 + 1], As[k * 3 + 2]);
-//            }
-//            printf("%d = %f\n", i, tmp);
-//            printf("(%d %d) D[%d] = %f\n", i, k, bid, tmp);
         }
         D[bid] += tmp;
     }
@@ -89,7 +60,6 @@ __global__ void solve(sGalaxy A, sGalaxy B, float* distances, int n, int per_thr
         for (int o = 0; o < BLOCK_SIZE; o++) {
             sum += D[o];
         }
-//        printf("SUM (%d %d): %f\n", blockIdx.x, blockIdx.y, sum);
         atomicAdd(distances, sum);
     }
 }

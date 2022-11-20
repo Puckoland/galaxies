@@ -6,15 +6,16 @@ __global__ void solve(sGalaxy A, sGalaxy B, float* distances, int n, int per_thr
     int bid = threadIdx.y * blockDim.x + threadIdx.x;
     int i = base + bid;
 
+    __shared__ float D[BLOCK_SIZE];
+    D[bid] = 0.0f;
+
+    if (i >= n) return;
     float Ax = A.x[i];
     float Ay = A.y[i];
     float Az = A.z[i];
     float Bx = B.x[i];
     float By = B.y[i];
     float Bz = B.z[i];
-
-    __shared__ float D[BLOCK_SIZE];
-    D[bid] = 0.0f;
 
     for (int t = blockIdx.x; t < per_thread; t++) {
         int index = t * BLOCK_SIZE + bid;
